@@ -46,6 +46,12 @@ const initP2PServer = (p2pPort: number) => {
 const getSockets = () => sockets;
 
 const initConnection = (ws: WebSocket) => {
+  sockets.forEach((s: WebSocket, sIndex) => {
+    if (s._socket.remoteAddress === ws._socket.remoteAddress) {
+      // Delete duplicated socket connections from array
+      delete sockets[sIndex];
+    }
+  });
   sockets.push(ws);
   initMessageHandler(ws);
   initErrorHandler(ws);
