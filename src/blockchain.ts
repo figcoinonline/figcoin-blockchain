@@ -495,29 +495,29 @@ const isValidChain = (blockchainToValidate: Block[]): UnspentTxOut[] => {
 
   // return txOuts.aUnspentTxOuts;
 
-  for (let i = 0; i < blockchainToValidate.length; i++) {
-    const currentBlock: Block = blockchainToValidate[i];
+  // for (let i = 0; i < blockchainToValidate.length; i++) {
+  //   const currentBlock: Block = blockchainToValidate[i];
 
-    if (currentBlock.index !== 0 && i !== 0 && !isValidNewBlock(blockchainToValidate[i], blockchainToValidate[i - 1])) {
-      return null;
-    }
+  //   if (currentBlock.index !== 0 && i !== 0 && !isValidNewBlock(blockchainToValidate[i], blockchainToValidate[i - 1])) {
+  //     return null;
+  //   }
 
-    if (i === 0) {
-      const block = blockchainToValidate[i];
-      const previousBgIndex = (Math.floor(block.index / BLOCKCHAIN_CHUNK_SIZE)) * BLOCKCHAIN_CHUNK_SIZE;
-      const previousChunkBlocks = getBlockchainChunk(previousBgIndex.toString());
-      const previousBlock = previousChunkBlocks[previousChunkBlocks.length - 1];
-      if (!isValidNewBlock(block, previousBlock)) {
-        return null;
-      }
-    }
+  //   if (i === 0) {
+  //     const block = blockchainToValidate[i];
+  //     const previousBgIndex = (Math.floor(block.index / BLOCKCHAIN_CHUNK_SIZE)) * BLOCKCHAIN_CHUNK_SIZE;
+  //     const previousChunkBlocks = getBlockchainChunk(previousBgIndex.toString());
+  //     const previousBlock = previousChunkBlocks[previousChunkBlocks.length - 1];
+  //     if (!isValidNewBlock(block, previousBlock)) {
+  //       return null;
+  //     }
+  //   }
 
-    txOuts.aUnspentTxOuts = processTransactions(currentBlock.data, txOuts.aUnspentTxOuts, currentBlock.index);
-    if (txOuts.aUnspentTxOuts === null) {
-      console.log('invalid transactions in blockchain');
-      return null;
-    }
-  }
+  //   txOuts.aUnspentTxOuts = processTransactions(currentBlock.data, txOuts.aUnspentTxOuts, currentBlock.index);
+  //   if (txOuts.aUnspentTxOuts === null) {
+  //     console.log('invalid transactions in blockchain');
+  //     return null;
+  //   }
+  // }
 
   return txOuts.aUnspentTxOuts;
 };
