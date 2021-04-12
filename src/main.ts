@@ -220,6 +220,7 @@ const initHttpServer = (myHttpPort: number) => {
   await new Promise((resolve) => setTimeout(resolve, 5000));
 
   await syncChain();
+  console.log("Chain Replaced Success Now Starting HTTP Server")
 
   initHttpServer(httpPort);
 })();

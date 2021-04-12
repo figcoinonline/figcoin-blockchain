@@ -38,9 +38,9 @@ const BLOCK_GENERATION_INTERVAL: number = 8;
 // in blocks
 const DIFFICULTY_ADJUSTMENT_INTERVAL: number = 10;
 // min figing
-const MIN_COIN_FOR_FIGING: number = 100000;
-
-const BLOCKCHAIN_CHUNK_SIZE: number = 10000;
+const MIN_COIN_FOR_FIGING: number = 1000000;
+// blockchain store chunck size
+const BLOCKCHAIN_CHUNK_SIZE: number = 1000;
 
 class Block {
 
@@ -63,6 +63,7 @@ class Block {
     this.difficulty = difficulty;
     this.figerBalance = figerBalance;
     this.figerAddress = figerAddress;
+
   }
 }
 
@@ -136,7 +137,9 @@ const readBlockchainAt = (index: string): Block[] => {
 
   const blocks: number[] = FSUtil.getFiles(blockPath).map((bn) => +bn).sort((a, b) => a > b ? 1 : -1);
   const blockResponse: Block[] = [];
-  blocks.forEach((block) => {
+
+  for (let i = 0; i < blocks.length; i++) {
+    const block = blocks[i];
     let blockData: string | Block = fs.readFileSync(path.join(blockPath, block.toString())).toString('utf-8');
 
     try {
@@ -147,13 +150,15 @@ const readBlockchainAt = (index: string): Block[] => {
     }
 
     blockResponse.push(blockData as Block);
-  });
+  }
+
+
   return blockResponse;
 }
 
 const getLastNBlockchainChunk = (n: number): Block[] => {
   const bgs = blockGroups();
-
+  console.log("number", n)
   const bgsKeys = Object.keys(bgs);
   if (!bgsKeys.length) {
     console.error('No Block Group!');
@@ -246,7 +251,6 @@ const getDifficulty = (): number => {
 
 const getAdjustedDifficulty = (latestBlock: Block) => {
   const bchain = getLastNBlockchainChunk(2);
-  console.log(bchain, "xxx")
 
   const prevAdjustmentBlock: Block = bchain[bchain.length - DIFFICULTY_ADJUSTMENT_INTERVAL];
 
@@ -607,8 +611,8 @@ const replaceChain = (newBlocks: Block[]) => {
     setUnspentTxOuts(aUnspentTxOuts);
     updateTransactionPool(unspentTxOuts);
     replaceBlockhainToFileSystem(newBlocks);
-    broadcastLatest();
     setLatestBlock(newBlocks[newBlocks.length - 1]);
+    broadcastLatest();
 
   } else {
     console.log('Received blockchain invalid');
