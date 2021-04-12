@@ -452,7 +452,7 @@ const isBlockStakingValid = (prevhash: string, address: string, timestamp: numbe
 };
 
 const isValidChain = (blockchainToValidate: Block[]): UnspentTxOut[] => {
-  console.log('isValidChain:');
+  console.log('isValidChain ?');
 
   const isValidGenesis = (block: Block): boolean => {
     return JSON.stringify(block) === JSON.stringify(genesisBlock);
@@ -493,9 +493,9 @@ const isValidChain = (blockchainToValidate: Block[]): UnspentTxOut[] => {
     }
   }
 
-  return txOuts.aUnspentTxOuts;
+  // return txOuts.aUnspentTxOuts;
 
-  /*for (let i = 0; i < blockchainToValidate.length; i++) {
+  for (let i = 0; i < blockchainToValidate.length; i++) {
     const currentBlock: Block = blockchainToValidate[i];
 
     if (currentBlock.index !== 0 && i !== 0 && !isValidNewBlock(blockchainToValidate[i], blockchainToValidate[i - 1])) {
@@ -517,7 +517,7 @@ const isValidChain = (blockchainToValidate: Block[]): UnspentTxOut[] => {
       console.log('invalid transactions in blockchain');
       return null;
     }
-  }*/
+  }
 
   return txOuts.aUnspentTxOuts;
 };
@@ -606,9 +606,10 @@ const replaceChain = (newBlocks: Block[]) => {
     console.log('Received blockchain is valid. Replacing current blockchain with received blockchain');
     setUnspentTxOuts(aUnspentTxOuts);
     updateTransactionPool(unspentTxOuts);
-    broadcastLatest();
     replaceBlockhainToFileSystem(newBlocks);
+    broadcastLatest();
     setLatestBlock(newBlocks[newBlocks.length - 1]);
+
   } else {
     console.log('Received blockchain invalid');
   }
@@ -661,6 +662,7 @@ const syncChain = async () => {
 };
 
 const write = (ws: WebSocket, message: any): void => ws.send(JSON.stringify(message));
+
 const syncPeer = (peerConnectionString: string) => {
   const peerConnections = getPeerConnections();
   const peerConnection: WebSocket = peerConnections[peerConnectionString];

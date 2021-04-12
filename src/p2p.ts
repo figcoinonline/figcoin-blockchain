@@ -3,6 +3,7 @@ import { Observable, Subject } from 'rxjs';
 import * as WebSocket from 'ws';
 import { Server } from 'ws';
 
+
 import {
   addBlockToChain,
   Block,
@@ -45,7 +46,24 @@ const initP2PServer = (p2pPort: number) => {
 
 const getSockets = () => sockets;
 
+
+
+
 const initConnection = (ws: WebSocket) => {
+
+
+  for (let i = 0; i < sockets.length; i++) {
+    const s = sockets[i];
+
+    if (s.url === ws.url) {
+      // Delete duplicated socket connections from array
+      _.without(sockets, sockets[i])
+    }
+    console.log(s.url)
+  }
+
+
+
   sockets.push(ws);
   initMessageHandler(ws);
   initErrorHandler(ws);
@@ -89,6 +107,7 @@ const initMessageHandler = (ws: WebSocket) => {
         case MessageType.QUERY_LATEST:
           write(ws, responseLatestMsg());
           break;
+
         case MessageType.RESPONSE_BLOCKCHAIN: {
           const receivedBlocks: Block[] = JSONToObject<Block[]>(message.data);
           if (receivedBlocks === null) {
@@ -98,9 +117,12 @@ const initMessageHandler = (ws: WebSocket) => {
           handleBlockchainResponse(receivedBlocks);
           break;
         }
+
         case MessageType.QUERY_TRANSACTION_POOL:
+
           write(ws, responseTransactionPoolMsg());
           break;
+
         case MessageType.RESPONSE_TRANSACTION_POOL:
           const receivedTransactions: Transaction[] = JSONToObject<Transaction[]>(message.data);
           if (receivedTransactions === null) {
@@ -120,6 +142,7 @@ const initMessageHandler = (ws: WebSocket) => {
         case MessageType.QUERY_BLOCK_GROUPS:
           write(ws, { 'type': MessageType.RESPONSE_BLOCK_GROUPS, data: blockGroups() });
           break;
+
         case MessageType.RESPONSE_BLOCK_GROUPS:
           const peerGroups = message.data;
           const currentGroups = blockGroups();
@@ -133,18 +156,18 @@ const initMessageHandler = (ws: WebSocket) => {
             }
           }
           break;
+
         case MessageType.QUERY_BLOCKCHAIN_CHUNK: {
           const blockGroup = message.data;
-
           const blocks = getBlockchainChunk(blockGroup);
           if (!blocks.length) {
             console.log(`Blocks not found: ${blockGroup}`);
             break;
           }
-
           write(ws, { 'type': MessageType.RESPONSE_BLOCKCHAIN_CHUNK, data: blocks });
           break;
         }
+
         case MessageType.RESPONSE_BLOCKCHAIN_CHUNK: {
           const receivedBlocks: Block[] = message.data;
           if (receivedBlocks === null) {
@@ -178,7 +201,7 @@ const broadcast = (message: Message): void => sockets.forEach((socket) => write(
 
 const queryChainLengthMsg = (): Message => ({ 'type': MessageType.QUERY_LATEST, 'data': null });
 
-const queryAllMsg = (): Message => ({ 'type': MessageType.QUERY_BLOCKCHAIN_CHUNK, 'data': null });
+const queryAllMsg = (): Message => ({ 'type': MessageType.QUERY_BLOCK_GROUPS, 'data': null });
 
 const responseLatestMsg = (): Message => ({
   'type': MessageType.RESPONSE_BLOCKCHAIN,
@@ -286,6 +309,7 @@ const peerConnections = {};
 const getPeerConnections = () => {
   return peerConnections;
 };
+
 const connectToPeers = (newPeer: string): void => {
   const ws: WebSocket = new WebSocket(newPeer);
   ws.on('open', () => {
