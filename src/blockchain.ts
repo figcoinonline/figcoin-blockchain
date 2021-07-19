@@ -139,12 +139,14 @@ let unspentTxOuts: UnspentTxOut[] = processTransactions(
 
 const searchBlockchain = (condition, onlyFirstOccurence = false): Block[] => {
   const bgs = blockGroups();
-  const bgsKeys = Object.keys(bgs);
+  const bgsKeys = Object.keys(bgs)
+    .map((bg) => +bg)
+    .sort((a, b) => a - b);
 
   const result = [];
   for (let i = 0; i < bgsKeys.length; i++) {
     const bg = bgsKeys[i];
-    const chunkBlocks = getBlockchainChunk(bg);
+    const chunkBlocks = getBlockchainChunk(bg.toString());
 
     const filteredBlocks = chunkBlocks.filter(condition);
     if (filteredBlocks.length) {
@@ -211,14 +213,16 @@ const getLastNBlockchainChunk = (n: number): Block[] => {
     process.exit(1);
   }
 
-  const orderedGroups = bgsKeys.sort((a, b) => (a > b ? 1 : -1));
+  const orderedGroups = bgsKeys
+    .map((bg) => +bg)
+    .sort((a, b) => (a > b ? 1 : -1));
 
   const blocks = [];
   const filteredGroups = orderedGroups.slice(orderedGroups.length - n);
 
   for (let i = 0; i < filteredGroups.length; i++) {
     const fg = filteredGroups[i];
-    const blks: Block[] = readBlockchainAt(fg);
+    const blks: Block[] = readBlockchainAt(fg.toString());
     blocks.push(...blks);
   }
 
@@ -226,15 +230,19 @@ const getLastNBlockchainChunk = (n: number): Block[] => {
 };
 
 const blockGroups = () => {
-  /*const dates = FSUtil.getDirectories(blockchainLocation)
-    .sort((a, b) => a > b ? 1 : -1);*/
-
   const groups: { [key: string]: number } = {};
 
-  const dates = FSUtil.getDirectories(blockchainLocation);
+  const dates = FSUtil.getDirectories(blockchainLocation)
+    .map((b) => +b)
+    .sort((a, b) => a - b);
+
+  console.log("dates", dates);
+
   for (let i = 0; i < dates.length; i++) {
     const date = dates[i];
-    groups[date] = FSUtil.getFiles(path.join(blockchainLocation, date)).length;
+    groups[date] = FSUtil.getFiles(
+      path.join(blockchainLocation, date.toString())
+    ).length;
   }
 
   return groups;
@@ -656,10 +664,14 @@ const isValidChain = (blockchainToValidate: Block[]): UnspentTxOut[] => {
   // let aUnspentTxOuts: UnspentTxOut[] = [];
 
   const bgs = blockGroups();
-  const bgKeys = Object.keys(bgs).sort((a, b) => (a > b ? 1 : -1));
+
+  const bgKeys = Object.keys(bgs)
+    .map((bg) => +bg)
+    .sort((a, b) => (a > b ? 1 : -1));
+
   for (let i = 0; i < bgKeys.length; i++) {
     const blockGroup = bgKeys[i];
-    const blocks: Block[] = getBlockchainChunk(blockGroup);
+    const blocks: Block[] = getBlockchainChunk(blockGroup.toString());
     if (!blocks) {
       return null;
     }
@@ -667,7 +679,7 @@ const isValidChain = (blockchainToValidate: Block[]): UnspentTxOut[] => {
     const previousBlockGroup = bgKeys[i - 1];
     let previousChunkBlocks: Block[];
     if (i !== 0) {
-      previousChunkBlocks = getBlockchainChunk(previousBlockGroup);
+      previousChunkBlocks = getBlockchainChunk(previousBlockGroup.toString());
       if (!previousChunkBlocks) {
         return null;
       }
@@ -802,10 +814,12 @@ const syncChain = async () => {
   setLatestBlock(latestBlocks[latestBlocks.length - 1]);
 
   const bgs = blockGroups();
-  const bgKeys = Object.keys(bgs).sort((a, b) => (a > b ? 1 : -1));
+  const bgKeys = Object.keys(bgs)
+    .map((bg) => +bg)
+    .sort((a, b) => (a > b ? 1 : -1));
   for (let i = 0; i < bgKeys.length; i++) {
     const blockGroup = bgKeys[i];
-    const blocks = getBlockchainChunk(blockGroup);
+    const blocks = getBlockchainChunk(blockGroup.toString());
 
     const isValid = validateChunkBlocks(blocks);
     if (!isValid) {
