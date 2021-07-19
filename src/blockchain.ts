@@ -56,11 +56,11 @@ const nodesecretlocation =
 // in seconds
 const BLOCK_GENERATION_INTERVAL: number = 8;
 // in blocks
-const DIFFICULTY_ADJUSTMENT_INTERVAL: number = 10;
+const DIFFICULTY_ADJUSTMENT_INTERVAL: number = 17;
 // min figing
 const MIN_COIN_FOR_FIGING: number = 5000000;
 // blockchain store chunck size
-const BLOCKCHAIN_CHUNK_SIZE: number = 1000;
+const BLOCKCHAIN_CHUNK_SIZE: number = 10000;
 
 class Block {
   public index: number;
