@@ -1,11 +1,26 @@
-import { ec } from 'elliptic';
-import { existsSync, readFileSync, unlinkSync, writeFileSync, readdir } from 'fs';
-import * as _ from 'lodash';
+import { ec } from "elliptic";
+import {
+  existsSync,
+  readFileSync,
+  unlinkSync,
+  writeFileSync,
+  readdir,
+} from "fs";
+import * as _ from "lodash";
 
-import { getPublicKey, getTransactionId, signTxIn, Transaction, TxIn, TxOut, UnspentTxOut } from './transaction';
+import {
+  getPublicKey,
+  getTransactionId,
+  signTxIn,
+  Transaction,
+  TxIn,
+  TxOut,
+  UnspentTxOut,
+} from "./transaction";
+import { getCurrentTimestamp } from "./blockchain";
 
-const bs58 = require('bs58');
-const EC = new ec('secp256k1');
+const bs58 = require("bs58");
+const EC = new ec("secp256k1");
 
 class Wallet {
   public address: string;
@@ -14,34 +29,36 @@ class Wallet {
   public length: number;
 }
 
-const masterPrivateKeyLocation = process.env.MASTER_PRIVATE_KEY || 'node/wallet/master_private_key';
-const nodesecretlocation = process.env.NODE_SECRET_LOCATION || 'node/wallet/node_secret';
+const masterPrivateKeyLocation =
+  process.env.MASTER_PRIVATE_KEY || "node/wallet/master_private_key";
+const nodesecretlocation =
+  process.env.NODE_SECRET_LOCATION || "node/wallet/node_secret";
 
 const getPrivateFromWallet = (): string => {
-  const buffer = readFileSync(masterPrivateKeyLocation, 'utf8');
+  const buffer = readFileSync(masterPrivateKeyLocation, "utf8");
   return buffer.toString();
 };
 
 const getNewFreeWallet = (): Wallet => {
   const keyPair = EC.genKeyPair();
   const privateKey = keyPair.getPrivate();
-  const key = EC.keyFromPrivate(privateKey, 'hex');
-  const bytes = Buffer.from(key.getPublic(true, 'hex'), 'hex');
+  const key = EC.keyFromPrivate(privateKey, "hex");
+  const bytes = Buffer.from(key.getPublic(true, "hex"), "hex");
   const publicKey = bs58.encode(bytes);
 
   const walletObject: any = {
-    'address': publicKey,
-    'publicKey': publicKey,
-    'privateKey': privateKey,
-    length: publicKey.length
+    address: publicKey,
+    publicKey: publicKey,
+    privateKey: privateKey,
+    length: publicKey.length,
   };
   return walletObject;
 };
 
 const getPublicFromNodeWallet = (): string => {
   const privateKey = getPrivateFromWallet();
-  const key = EC.keyFromPrivate(privateKey, 'hex');
-  const bytes = Buffer.from(key.getPublic(true, 'hex'), 'hex');
+  const key = EC.keyFromPrivate(privateKey, "hex");
+  const bytes = Buffer.from(key.getPublic(true, "hex"), "hex");
   const publicKey = bs58.encode(bytes);
 
   return publicKey;
@@ -63,9 +80,14 @@ const initMasterWallet = () => {
   writeFileSync(masterPrivateKeyLocation, newMasterPrivateKey);
   writeFileSync(nodesecretlocation, newNodeSecret);
 
-  console.log('new master wallet with private key created to : %s', masterPrivateKeyLocation);
-  console.log('new node secret with private key created to : %s', newNodeSecret);
-
+  console.log(
+    "new master wallet with private key created to : %s",
+    masterPrivateKeyLocation
+  );
+  console.log(
+    "new node secret with private key created to : %s",
+    newNodeSecret
+  );
 };
 
 const deleteWallet = () => {
@@ -76,18 +98,29 @@ const deleteWallet = () => {
 
 const getBalance = (address: string, unspentTxOuts: UnspentTxOut[]): number => {
   const walletBalance: number = 0;
-  const transactionBalance: number = _(findUnspentTxOuts(address, unspentTxOuts))
+  const transactionBalance: number = _(
+    findUnspentTxOuts(address, unspentTxOuts)
+  )
     .map((uTxO: UnspentTxOut) => uTxO.amount)
     .sum();
 
   return transactionBalance + walletBalance;
 };
 
-const findUnspentTxOuts = (ownerAddress: string, unspentTxOuts: UnspentTxOut[]) => {
-  return _.filter(unspentTxOuts, (uTxO: UnspentTxOut) => uTxO.address === ownerAddress);
+const findUnspentTxOuts = (
+  ownerAddress: string,
+  unspentTxOuts: UnspentTxOut[]
+) => {
+  return _.filter(
+    unspentTxOuts,
+    (uTxO: UnspentTxOut) => uTxO.address === ownerAddress
+  );
 };
 
-const findTxOutsForAmount = (amount: number, myUnspentTxOuts: UnspentTxOut[]) => {
+const findTxOutsForAmount = (
+  amount: number,
+  myUnspentTxOuts: UnspentTxOut[]
+) => {
   let currentAmount = 0;
   const includedUnspentTxOuts = [];
   for (const myUnspentTxOut of myUnspentTxOuts) {
@@ -99,12 +132,21 @@ const findTxOutsForAmount = (amount: number, myUnspentTxOuts: UnspentTxOut[]) =>
     }
   }
 
-  const eMsg = 'Cannot create transaction from the available unspent transaction outputs.' +
-    ' Required amount:' + amount + '. Available unspentTxOuts:' + JSON.stringify(myUnspentTxOuts);
+  const eMsg =
+    "Cannot create transaction from the available unspent transaction outputs." +
+    " Required amount:" +
+    amount +
+    ". Available unspentTxOuts:" +
+    JSON.stringify(myUnspentTxOuts);
   throw Error(eMsg);
 };
 
-const createTxOuts = (receiverAddress: string, myAddress: string, amount: number, leftOverAmount: number) => {
+const createTxOuts = (
+  receiverAddress: string,
+  myAddress: string,
+  amount: number,
+  leftOverAmount: number
+) => {
   const txOut1: TxOut = new TxOut(receiverAddress, amount);
   if (leftOverAmount === 0) {
     return [txOut1];
@@ -114,7 +156,10 @@ const createTxOuts = (receiverAddress: string, myAddress: string, amount: number
   }
 };
 
-const filterTxPoolTxs = (unspentTxOuts: UnspentTxOut[], transactionPool: Transaction[]): UnspentTxOut[] => {
+const filterTxPoolTxs = (
+  unspentTxOuts: UnspentTxOut[],
+  transactionPool: Transaction[]
+): UnspentTxOut[] => {
   const txIns: TxIn[] = _(transactionPool)
     .map((tx: Transaction) => tx.txIns)
     .flatten()
@@ -122,11 +167,13 @@ const filterTxPoolTxs = (unspentTxOuts: UnspentTxOut[], transactionPool: Transac
   const removable: UnspentTxOut[] = [];
   for (const unspentTxOut of unspentTxOuts) {
     const txIn = _.find(txIns, (aTxIn: TxIn) => {
-      return aTxIn.txOutIndex === unspentTxOut.txOutIndex && aTxIn.txOutId === unspentTxOut.txOutId;
+      return (
+        aTxIn.txOutIndex === unspentTxOut.txOutIndex &&
+        aTxIn.txOutId === unspentTxOut.txOutId
+      );
     });
 
     if (txIn === undefined) {
-
     } else {
       removable.push(unspentTxOut);
     }
@@ -135,18 +182,27 @@ const filterTxPoolTxs = (unspentTxOuts: UnspentTxOut[], transactionPool: Transac
   return _.without(unspentTxOuts, ...removable);
 };
 
-const createTransaction = (receiverAddress: string, amount: number, privateKey: string,
-  unspentTxOuts: UnspentTxOut[], txPool: Transaction[]): Transaction => {
-
-  console.log('txPool: %s', JSON.stringify(txPool));
+const createTransaction = (
+  receiverAddress: string,
+  amount: number,
+  privateKey: string,
+  unspentTxOuts: UnspentTxOut[],
+  txPool: Transaction[]
+): Transaction => {
+  console.log("txPool: %s", JSON.stringify(txPool));
   const myAddress: string = getPublicKey(privateKey);
 
-  const myUnspentTxOutsA = unspentTxOuts.filter((uTxO: UnspentTxOut) => uTxO.address === myAddress);
+  const myUnspentTxOutsA = unspentTxOuts.filter(
+    (uTxO: UnspentTxOut) => uTxO.address === myAddress
+  );
 
   const myUnspentTxOuts = filterTxPoolTxs(myUnspentTxOutsA, txPool);
 
   // filter from unspentOutputs such inputs that are referenced in pool
-  const { includedUnspentTxOuts, leftOverAmount } = findTxOutsForAmount(amount, myUnspentTxOuts);
+  const { includedUnspentTxOuts, leftOverAmount } = findTxOutsForAmount(
+    amount,
+    myUnspentTxOuts
+  );
 
   const toUnsignedTxIn = (unspentTxOut: UnspentTxOut) => {
     const txIn: TxIn = new TxIn();
@@ -173,10 +229,15 @@ const createTransaction = (receiverAddress: string, amount: number, privateKey: 
   return tx;
 };
 
-const createFromWalletTransaction = (publicKey: string, amount: number, privateKey: string, receiverAddress: string,
-  unspentTxOuts: UnspentTxOut[], txPool: Transaction[]): Transaction => {
-
-  console.log('txPool: %s', JSON.stringify(txPool));
+const createFromWalletTransaction = (
+  publicKey: string,
+  amount: number,
+  privateKey: string,
+  receiverAddress: string,
+  unspentTxOuts: UnspentTxOut[],
+  txPool: Transaction[]
+): Transaction => {
+  console.log("txPool: %s", JSON.stringify(txPool));
 
   const senderAddress: string = getPublicKey(privateKey);
 
@@ -184,12 +245,17 @@ const createFromWalletTransaction = (publicKey: string, amount: number, privateK
     return null;
   }
 
-  const myUnspentTxOutsA = unspentTxOuts.filter((uTxO: UnspentTxOut) => uTxO.address === senderAddress);
+  const myUnspentTxOutsA = unspentTxOuts.filter(
+    (uTxO: UnspentTxOut) => uTxO.address === senderAddress
+  );
 
   const myUnspentTxOuts = filterTxPoolTxs(myUnspentTxOutsA, txPool);
 
   // filter from unspentOutputs such inputs that are referenced in pool
-  const { includedUnspentTxOuts, leftOverAmount } = findTxOutsForAmount(amount, myUnspentTxOuts);
+  const { includedUnspentTxOuts, leftOverAmount } = findTxOutsForAmount(
+    amount,
+    myUnspentTxOuts
+  );
 
   const toUnsignedTxIn = (unspentTxOut: UnspentTxOut) => {
     const txIn: TxIn = new TxIn();
@@ -202,11 +268,17 @@ const createFromWalletTransaction = (publicKey: string, amount: number, privateK
 
   const tx: Transaction = new Transaction();
   tx.txIns = unsignedTxIns;
-  tx.txOuts = createTxOuts(receiverAddress, senderAddress, amount, leftOverAmount);
+  tx.txOuts = createTxOuts(
+    receiverAddress,
+    senderAddress,
+    amount,
+    leftOverAmount
+  );
   tx.id = getTransactionId(tx);
   tx.amount = amount;
   tx.receiver = receiverAddress;
   tx.sender = senderAddress;
+  tx.timestamp = getCurrentTimestamp();
 
   tx.txIns = tx.txIns.map((txIn: TxIn, index: number) => {
     txIn.signature = signTxIn(tx, index, privateKey, unspentTxOuts);
@@ -227,5 +299,5 @@ export {
   initMasterWallet,
   deleteWallet,
   findUnspentTxOuts,
-  getNewFreeWallet
+  getNewFreeWallet,
 };

@@ -1,5 +1,10 @@
-import * as _ from 'lodash';
-import { Transaction, TxIn, UnspentTxOut, validateTransaction } from './transaction';
+import * as _ from "lodash";
+import {
+  Transaction,
+  TxIn,
+  UnspentTxOut,
+  validateTransaction,
+} from "./transaction";
 
 let transactionPool: Transaction[] = [];
 
@@ -7,16 +12,18 @@ const getTransactionPool = () => {
   return _.cloneDeep(transactionPool);
 };
 
-const addToTransactionPool = (tx: Transaction, unspentTxOuts: UnspentTxOut[]) => {
-
+const addToTransactionPool = (
+  tx: Transaction,
+  unspentTxOuts: UnspentTxOut[]
+) => {
   if (!validateTransaction(tx, unspentTxOuts)) {
-    throw Error('Trying to add invalid tx to pool');
+    throw Error("Trying to add invalid tx to pool");
   }
 
   if (!isValidTxForPool(tx, transactionPool)) {
-    throw Error('Trying to add invalid tx to pool is not Valid Tx For Pool');
+    throw Error("Trying to add invalid tx to pool is not Valid Tx For Pool");
   }
-  console.log('adding to txPool: %s', JSON.stringify(tx));
+  console.log("adding to txPool: %s", JSON.stringify(tx));
   transactionPool.push(tx);
 };
 
@@ -38,7 +45,10 @@ const updateTransactionPool = (unspentTxOuts: UnspentTxOut[]) => {
     }
   }
   if (invalidTxs.length > 0) {
-    console.log('removing the following transactions from txPool: %s', JSON.stringify(invalidTxs));
+    console.log(
+      "removing the following transactions from txPool: %s",
+      JSON.stringify(invalidTxs)
+    );
     transactionPool = _.without(transactionPool, ...invalidTxs);
   }
 };
@@ -50,18 +60,24 @@ const getTxPoolIns = (aTransactionPool: Transaction[]): TxIn[] => {
     .value();
 };
 
-const isValidTxForPool = (tx: Transaction, aTtransactionPool: Transaction[]): boolean => {
+const isValidTxForPool = (
+  tx: Transaction,
+  aTtransactionPool: Transaction[]
+): boolean => {
   const txPoolIns: TxIn[] = getTxPoolIns(aTtransactionPool);
 
   const containsTxIn = (txIns: TxIn[], txIn: TxIn) => {
-    return _.find(txPoolIns, ((txPoolIn) => {
-      return txIn.txOutIndex === txPoolIn.txOutIndex && txIn.txOutId === txPoolIn.txOutId;
-    }));
+    return _.find(txPoolIns, (txPoolIn) => {
+      return (
+        txIn.txOutIndex === txPoolIn.txOutIndex &&
+        txIn.txOutId === txPoolIn.txOutId
+      );
+    });
   };
 
   for (const txIn of tx.txIns) {
     if (containsTxIn(txPoolIns, txIn)) {
-      console.log('txIn already found in the txPool');
+      console.log("txIn already found in the txPool");
       return false;
     }
   }
